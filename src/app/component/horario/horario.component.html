@@ -1,0 +1,307 @@
+<div class="paciente-container">
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex align-items-center">
+                <h4 class="card-title">Mostrar</h4>
+
+                <a href="#addRowModal" class="btn btn-primary btn-round ml-auto" data-toggle="modal"
+                    (click)="limpiarFormulario()">Nuevo</a>
+                <!-- Agregar Nuevos Registros -->
+                <div class="modal fade" id="addRowModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel"
+                    aria-hidden="true" data-backdrop="static">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header" style="justify-content: center;">
+                                <h4 class="modal-title" id="myModalLabel">Nuevo Registro</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <mat-error *ngIf="mensajeError" class="error-message">{{ mensajeError }}</mat-error>
+                                    <div *ngIf="mensajeExito" class="success-message">{{ mensajeExito }}</div>
+                                    <div class="card-body">
+
+                                        <form [formGroup]="altaHorarioForm" (ngSubmit)="alta_Horario()"
+                                            autocomplete="on" enctype="multipart/form-data">
+                                            <div class="row">
+                                                <div class="col-md-12 pr-0">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Dias de
+                                                            trabajo</label>
+                                                        <input formControlName="dias" required="" type="text"
+                                                            class="form-control" placeholder="Dias de trabajo">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Hora
+                                                            inicio</label>
+                                                        <input formControlName="horaini" required="" type="time"
+                                                            class="form-control">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Hora
+                                                            fin</label>
+                                                        <input formControlName="horafin" required="" type="time"
+                                                            class="form-control">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Personal</label>
+                                                        <select class="form-control" formControlName="selectPersonal">
+                                                            <option value="0">Seleccione el personal</option>
+                                                            <option *ngFor="let personal of listaPersonal"
+                                                                [value]="personal.MATRICULA">{{personal.NOMBRE}}
+                                                                {{personal.APELLIDO_PATERNO}}
+                                                                {{personal.APELLIDO_MATERNO}}</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-12 pr-0">
+                                                    <div class="form-group form-group-default">
+                                                        <label>Notas</label>
+                                                        <textarea formControlName="nota" class="form-control" rows="5"
+                                                            placeholder="Notas" (input)="updateCharCount()"
+                                                            maxlength="250">
+                                                        </textarea>
+                                                        <small [ngStyle]="{'color': charCountColor}">
+                                                            {{ charCount }}/250
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-default"
+                                                    (click)="limpiarFormulario()" data-dismiss="modal"><span
+                                                        class="glyphicon glyphicon-remove"></span> Cancelar
+                                                </button>
+                                                <button type="submit" name="agregar" class="btn btn-primary"><span
+                                                        class="glyphicon glyphicon-floppy-disk"></span> Guardar
+                                                    Registro</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="modalEditar" tabindex="-1" role="dialog" aria-labelledby="labelmodalEditar"
+                    aria-hidden="true" data-backdrop="static">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header" style="justify-content: center;">
+                                <h4 class="modal-title" id="labelmodalEditar">Actualizar Registro</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="container-fluid">
+                                    <mat-error *ngIf="mensajeError" class="error-message">{{ mensajeError }}</mat-error>
+                                    <div *ngIf="mensajeExito" class="success-message">{{ mensajeExito }}</div>
+                                    <div class="card-body">
+
+                                        <form [formGroup]="altaHorarioForm" autocomplete="on"
+                                            enctype="multipart/form-data">
+                                            <div class="row">
+                                                <div class="col-md-12 pr-0">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Dias de
+                                                            trabajo</label>
+                                                        <input formControlName="dias" required="" type="text"
+                                                            class="form-control" placeholder="Dias de trabajo">
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Hora
+                                                            inicio</label>
+                                                        <input formControlName="horaini" required="" type="time"
+                                                            class="form-control">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Hora
+                                                            fin</label>
+                                                        <input formControlName="horafin" required="" type="time"
+                                                            class="form-control">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-6">
+                                                    <div class="form-group form-group-default">
+                                                        <label><i class="fa-solid fa-asterisk red"></i>Personal</label>
+                                                        <select class="form-control" formControlName="selectPersonal">
+                                                            <option value="0">Seleccione el personal</option>
+                                                            <option *ngFor="let personal of listaPersonal"
+                                                                [value]="personal.MATRICULA">{{personal.NOMBRE}}
+                                                                {{personal.APELLIDO_PATERNO}}
+                                                                {{personal.APELLIDO_MATERNO}}</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-12 pr-0">
+                                                    <div class="form-group form-group-default">
+                                                        <label>Notas</label>
+                                                        <textarea formControlName="nota" class="form-control" rows="5"
+                                                            placeholder="Notas" (input)="updateCharCount()"
+                                                            maxlength="250">
+                                                        </textarea>
+                                                        <small [ngStyle]="{'color': charCountColor}">
+                                                            {{ charCount }}/250
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-default" data-dismiss="modal"><span
+                                                        class="glyphicon glyphicon-remove"></span> Cancelar
+                                                </button>
+                                                <button type="submit" name="agregar" class="btn btn-primary"
+                                                    (click)="actualizarRegistro()"><span
+                                                        class="glyphicon glyphicon-floppy-disk"></span> actualizar
+                                                    Registro</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="dataTables_wrapper container-fluid dt-bootstrap4">
+                <div class="row">
+                    <div class="col-sm-12 col-md-6">
+                        <div class="dataTables_length" id="add-row_length"><label>Show <select name="add-row_length"
+                                    aria-controls="add-row" class="form-control form-control-sm">
+                                    <option value="10">10</option>
+                                    <option value="25">25</option>
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                </select> entries</label></div>
+                    </div>
+                    <div class="col-sm-12 col-md-6">
+                        <div id="add-row_filter" class="dataTables_filter"><label>Buscar:<input type="search"
+                                    class="form-control form-control-sm" placeholder="ingrese matricula"
+                                    aria-controls="add-row"></label>
+                        </div>
+                    </div>
+                </div>
+                <table mat-table [dataSource]="listahorario" matSort
+                    class="table table-light table-hover table-responsive" role="grid" aria-describedby="add-row_info">
+
+                    <ng-container matColumnDef="idHorario">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Id </th>
+                        <td mat-cell *matCellDef="let element"> {{element.ID_HORARIO}} </td>
+                        <td mat-footer-cell *matFooterCellDef> Id </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="horario">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Horario </th>
+                        <td mat-cell *matCellDef="let element"> {{element.HORARIO}}
+                        </td>
+                        <td mat-footer-cell *matFooterCellDef> Horario </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="hora">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Hora </th>
+                        <td mat-cell *matCellDef="let element"> De: {{element.HORA_INICIO}} hasta:
+                            {{element.HORA_FIN}}
+                        </td>
+                        <td mat-footer-cell *matFooterCellDef> Hora </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="personal">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Personal </th>
+                        <td mat-cell *matCellDef="let element"> {{element.personal.NOMBRE}}
+                            {{element.personal.APELLIDO_PATERNO}}
+                            {{element.personal.APELLIDO_MATERNO}} </td>
+                        <td mat-footer-cell *matFooterCellDef> Personal </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="matricula">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Matricula </th>
+                        <td mat-cell *matCellDef="let element"> {{element.MATRICULAMED}} </td>
+                        <td mat-footer-cell *matFooterCellDef> Matricula </td>
+                    </ng-container>
+
+                    <ng-container matColumnDef="notas">
+                        <th mat-header-cell *matHeaderCellDef mat-sort-header> Notas </th>
+                        <td mat-cell *matCellDef="let element">
+                            <p class="nota">{{element.NOTAS}}</p>
+                        </td>
+                        <td mat-footer-cell *matFooterCellDef> Notas </td>
+                    </ng-container>
+
+                    <!-- Acciones Column -->
+                    <ng-container matColumnDef="acciones">
+                        <th mat-header-cell *matHeaderCellDef> Action </th>
+                        <td mat-cell *matCellDef="let element">
+                            <div class="form-button-action">
+
+                                <button href="#modalEditar" title="Editar" class="btn btn-link btn-primary btn-lg"
+                                    data-toggle="modal" (click)="cargarDatos(element)">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+
+                                <button href="#deleteRowModal" class="btn btn-link btn-danger btn-lg"
+                                    data-toggle="modal" title="Eliminar" data-original-title="Delete Task"
+                                    (click)="cargarDatos(element)">
+                                    <i class="fa fa-times"></i>
+                                </button>
+
+                                <div class="modal fade" id="deleteRowModal" tabindex="-1" role="dialog"
+                                    aria-labelledby="deleteModalLabel" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h4 class="modal-title" id="deleteModalLabel">Confirmar eliminación
+                                                </h4>
+                                                <button type="button" class="close" data-dismiss="modal"
+                                                    aria-hidden="true">&times;</button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p class="text-center">¿Está seguro de que desea borrar este
+                                                    registro?</p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                                    <span class="fa fa-times"></span> Cancelar
+                                                </button>
+                                                <!-- Botón que ejecuta la acción de eliminar -->
+                                                <button type="button" class="btn btn-danger" (click)="eliminar(element)"
+                                                    data-dismiss="modal">
+                                                    <span class="fa fa-trash"></span> Eliminar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td mat-footer-cell *matFooterCellDef> Action </td>
+                    </ng-container>
+
+                    <!-- Header Row -->
+                    <tr mat-header-row *matHeaderRowDef="columnas sticky: true"></tr>
+
+                    <!-- Row Def -->
+                    <tr mat-row *matRowDef="let row; columns: columnas;"></tr>
+
+                    <!-- Footer Row -->
+                    <tr mat-footer-row *matFooterRowDef="columnas"></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
