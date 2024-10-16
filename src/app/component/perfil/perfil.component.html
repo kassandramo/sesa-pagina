@@ -1,34 +1,8 @@
-<div class="perfil-container">
-    <mat-card>
-      <mat-card-header>
-        <div mat-card-avatar class="avatar-container">
-          <img [src]="userIcon" alt="Usuario" class="avatar-img">
-        </div>
-        <mat-card-title>Mi Perfil</mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <form (ngSubmit)="onSave()">
-          <mat-form-field appearance="fill">
-            <mat-label>Nombre</mat-label>
-            <input matInput [(ngModel)]="userData.name" name="name" required>
-          </mat-form-field>
-  
-          <mat-form-field appearance="fill">
-            <mat-label>Email</mat-label>
-            <input matInput [(ngModel)]="userData.email" name="email" required>
-          </mat-form-field>
-  
-          <mat-form-field appearance="fill">
-            <mat-label>Color de Tema</mat-label>
-            <mat-select [(ngModel)]="selectedTheme" name="theme" (selectionChange)="onThemeChange($event.value)">
-              <mat-option value="tema-claro">Claro</mat-option>
-              <mat-option value="tema-oscuro">Oscuro</mat-option>
-            </mat-select>
-          </mat-form-field>
-  
-          <button mat-raised-button color="primary" type="submit">Guardar</button>
-        </form>
-      </mat-card-content>
-    </mat-card>
+<div class="slider">
+  <div class="slide-track">
+    <div class="slide"><img src="/assets/img/1.png" alt=""></div>
+    <div class="slide"><img src="/assets/img/2.png" alt=""></div>
+    <div class="slide"><img src="/assets/img/3.png" alt=""></div>
+    <div class="slide"><img src="https://www3.animeflv.net/uploads/animes/covers/4083.jpg" alt=""></div>
   </div>
-  
+</div>

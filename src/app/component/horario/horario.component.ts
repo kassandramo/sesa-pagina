@@ -1,15 +1,16 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { HorariosService } from '../../core/services/horario.service';
 import { validacionesCampos } from '../../shared/validacionesCampos';
 import { PersonalService } from '../../core/services/personal.service';
 import { constantesGlobales } from '../../shared/global.constants';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-horario',
@@ -18,6 +19,7 @@ import { constantesGlobales } from '../../shared/global.constants';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatTableModule,
+    MatPaginatorModule,
     MatInputModule,
     MatButtonModule,
     CommonModule,
@@ -28,6 +30,7 @@ import { constantesGlobales } from '../../shared/global.constants';
 })
 export class HorarioComponent implements OnInit {
   altaHorarioForm: FormGroup;
+
   listahorario: any[] = [];
   mensajeError: string = '';
   mensajeExito: string = '';
@@ -37,13 +40,28 @@ export class HorarioComponent implements OnInit {
   charCount: number = 0;
   charCountColor: string = 'black';
   columnas: string[] = ['idHorario', 'horario', 'hora', 'personal', 'matricula', 'notas', 'acciones'];
-  row: any;
+  
+  busquedaForm: FormGroup;
+  dataSource = new MatTableDataSource<any>([]);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  userData: any;
 
   constructor(
     private personalService: PersonalService,
     private horarioService: HorariosService,
     private fb: FormBuilder,
   ) {
+    this.busquedaForm = this.fb.group({
+      search: ['']
+    });
+
+    this.busquedaForm.get('search')?.valueChanges.subscribe(value => {
+      if (value === null || value === undefined || value === '') {
+        this.buscar();
+      }
+    });
+    
     this.altaHorarioForm = this.fb.group({
       dias: [''],
       horaini: [''],
@@ -62,6 +80,11 @@ export class HorarioComponent implements OnInit {
     console.log("entrando en el componente pacientes");
     this.cargaHorarios();
     this.cargaListaPersonal();
+    this.cargaFiltros();
+  }
+  
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
   }
 
   cargaHorarios() {
@@ -69,6 +92,7 @@ export class HorarioComponent implements OnInit {
       next: data => {
         console.log('Respuesta del API:', data);
         this.listahorario = data;
+        this.dataSource.data = this.listahorario;
         this.actualizarTabla();
       },
       error: error => console.error('Error al obtener personal:', error)
@@ -83,6 +107,27 @@ export class HorarioComponent implements OnInit {
       },
       error: error => console.error('Error al obtener personal:', error)
     });
+  }
+
+  cargaFiltros():void {
+    // Configura el filtro para que funcione en múltiples campos
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      const transformedFilter = filter.trim().toLowerCase();
+      console.log('dta',data);
+      // Busca en todos los campos relevantes
+      const matchId = data.ID_HORARIO.toString().includes(transformedFilter);
+      const matchNombre = data.personal.NOMBRE.toLowerCase().includes(transformedFilter);
+      const matchMatricula = data.MATRICULAMED.toString().includes(transformedFilter);
+
+      // Retorna true si el filtro coincide con alguno de los campos
+      return matchId || matchNombre || matchMatricula;
+    };
+  }
+
+  // Función para aplicar el filtro
+  buscar() {
+    const criterio = this.busquedaForm.get('search')?.value || ''; // Asegúrate de que no sea null
+    this.dataSource.filter = criterio.trim().toLowerCase(); // Aplica el filtro en minúsculas
   }
 
   alta_Horario(): void {
@@ -158,8 +203,10 @@ export class HorarioComponent implements OnInit {
     // Cambiar el estado del elemento localmente
     const nuevoEstado = { ACTIVO: false };
 
+    console.log(`Id de cargadatos: ${this.idelement}, id de elemento: ${element.ID_HORARIO}`);
+
     // Llamar al servicio para actualizar el estado en la base de datos
-    this.horarioService.actualizarHorario(element.ID_HORARIO, nuevoEstado).subscribe({
+    this.horarioService.actualizarHorario(this.idelement, nuevoEstado).subscribe({
       next: (respuesta) => {
         console.log('Horario actualizado correctamente:', respuesta);
 
@@ -167,7 +214,7 @@ export class HorarioComponent implements OnInit {
         element.ACTIVO = false;
 
         // Actualizar la tabla para reflejar los cambios
-        this.actualizarTabla();
+        this.cargaHorarios();
       },
       error: (error) => {
         console.error('Error al actualizar el estado del horario:', error);
@@ -219,7 +266,7 @@ export class HorarioComponent implements OnInit {
 
   actualizarTabla(): void {
     // Filtrar los horarios que estén activos
-    this.listahorario = this.listahorario
+    this.dataSource.data
       .filter(horario => horario.ACTIVO)  // Filtra los horarios que estén activos
       .sort((a, b) => {
         // Ordenar por FECHA_REGISTRO en orden descendente (los más nuevos primero)

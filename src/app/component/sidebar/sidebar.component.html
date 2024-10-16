@@ -10,21 +10,21 @@
                           <span class="caret"></span>
                         </a>
                       </li>
-                      <li class="nav-item" routerLinkActive="active">
+                      <li *ngIf="rol == '4' || rol == '5'" class="nav-item" routerLinkActive="active">
                         <a class="nav-link" routerLink="/page/paciente">
                           <i class="fas fa-male"></i>
                           <p>Pacientes</p>
                           <span class="caret"></span>
                         </a>
                       </li>
-                      <li class="nav-item" routerLinkActive="active">
+                      <li *ngIf="rol == '2' || rol == '1' || rol == '4' || rol == '5'"  class="nav-item" routerLinkActive="active">
                         <a class="nav-link" routerLink="/page/personal">
                           <i class="fas fa-user-md"></i>
                           <p>Personal</p>
                           <span class="caret"></span>
                         </a>
                       </li>
-                      <li class="nav-item" routerLinkActive="active">
+                      <li *ngIf="rol == '4' || rol == '5'" class="nav-item" routerLinkActive="active">
                         <a class="nav-link" routerLink="/page/horario">
                           <i class="fas fa-calendar-alt"></i>
                           <p>Horarios</p>

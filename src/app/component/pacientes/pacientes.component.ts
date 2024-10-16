@@ -1,6 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { UserDataService } from '../../core/services/user.service';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { CommonModule } from '@angular/common';
@@ -10,6 +10,7 @@ import { MatInputModule } from '@angular/material/input';
 import { validacionesCampos } from '../../shared/validacionesCampos';
 import { PacientesService } from '../../core/services/pacientes.service';
 import { constantesGlobales, ValidacionesRegex } from '../../shared/global.constants';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-pacientes',
@@ -18,6 +19,7 @@ import { constantesGlobales, ValidacionesRegex } from '../../shared/global.const
     ReactiveFormsModule,
     MatFormFieldModule,
     MatTableModule,
+    MatPaginatorModule,
     MatInputModule,
     MatButtonModule,
     CommonModule,
@@ -28,6 +30,7 @@ import { constantesGlobales, ValidacionesRegex } from '../../shared/global.const
 })
 export class PacientesComponent implements OnInit {
   altaPacienteForm: FormGroup;
+  busquedaForm: FormGroup;
   hide = true;
   datosCargados: any;
   idelement: number = 0;
@@ -35,12 +38,24 @@ export class PacientesComponent implements OnInit {
   mensajeExito: string = '';
   listaPacientes: any[] = [];
   displayedColumns: string[] = ['idPaciente', 'nombre', 'curp','genero', 'seguro','telefono', 'estado', 'fecha', 'acciones'];
-  dataSource: any[] = [];
+  dataSource = new MatTableDataSource<any>([]);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  userData: any;
 
   constructor(
     private pacientesService: PacientesService,
     private fb: FormBuilder,
   ) {
+    this.busquedaForm = this.fb.group({
+      search: ['']
+    });
+
+    this.busquedaForm.get('search')?.valueChanges.subscribe(value => {
+      if (value === null || value === undefined || value === '') {
+        this.buscar();
+      }
+    });
     this.altaPacienteForm = this.fb.group({
       nombre: ['', Validators.required],
       apellidoPat: ['', Validators.required],
@@ -55,7 +70,11 @@ export class PacientesComponent implements OnInit {
   ngOnInit(): void {
     console.log("entrando en el componente pacientes");
     this.cargaPacientes();
-    
+    this.cargaFiltros();
+  }
+  
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
   }
 
   cargaPacientes(): void{
@@ -63,10 +82,34 @@ export class PacientesComponent implements OnInit {
       next: data => {
         console.log('Respuesta del API:', data);
         this.listaPacientes = data;
+        this.dataSource.data = this.listaPacientes;
         this.actualizarTabla();
       },
       error: error => console.error('Error al obtener personal:', error)
     });
+  }
+
+  cargaFiltros():void {
+    // Configura el filtro para que funcione en múltiples campos
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      const transformedFilter = filter.trim().toLowerCase();
+      console.log('dta',data);
+      // Busca en todos los campos relevantes
+      const matchId = data.ID_PACIENTE.toString().includes(transformedFilter);
+      const matchNombre = data.NOMBRE.toLowerCase().includes(transformedFilter);
+      const matchApPat = data.APELLIDO_PATERNO.toLowerCase().includes(transformedFilter);
+      const matchAPMat= data.APELLIDO_MATERNO.toLowerCase().includes(transformedFilter);
+      const matchCurp = data.CVE_CURP.toString().includes(transformedFilter);
+
+      // Retorna true si el filtro coincide con alguno de los campos
+      return matchId || matchNombre || matchCurp || matchAPMat || matchApPat;
+    };
+  }
+
+  // Función para aplicar el filtro
+  buscar() {
+    const criterio = this.busquedaForm.get('search')?.value || ''; // Asegúrate de que no sea null
+    this.dataSource.filter = criterio.trim().toLowerCase(); // Aplica el filtro en minúsculas
   }
 
   alta_Pacientes(): void {
@@ -130,7 +173,7 @@ export class PacientesComponent implements OnInit {
     const nuevoEstado = { ACTIVO: false };
 
     // Llamar al servicio para actualizar el estado en la base de datos
-    this.pacientesService.actualizarPaciente(element.ID_PACIENTE, nuevoEstado).subscribe({
+    this.pacientesService.actualizarPaciente(this.idelement, nuevoEstado).subscribe({
       next: (respuesta) => {
         console.log('Horario actualizado correctamente:', respuesta);
 
@@ -202,7 +245,7 @@ export class PacientesComponent implements OnInit {
 
   actualizarTabla(): void {
     // Filtrar los horarios que estén activos
-    this.listaPacientes = this.listaPacientes
+    this.dataSource.data
       .sort((a, b) => {
         // Ordenar por FECHA_REGISTRO en orden descendente (los más nuevos primero)
         return new Date(b.FECHA).getTime() - new Date(a.FECHA).getTime();

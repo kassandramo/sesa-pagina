@@ -204,22 +204,23 @@
         <div class="card-body">
             <div class="dataTables_wrapper container-fluid dt-bootstrap4">
                 <div class="row">
-                    <div class="col-sm-12 col-md-6">
-                        <div class="dataTables_length" id="add-row_length"><label>Show <select name="add-row_length"
-                                    aria-controls="add-row" class="form-control form-control-sm">
-                                    <option value="10">10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select> entries</label></div>
+                    <!-- Paginación -->
+                    <div class="col-md-5 justify-content-start">
+                        <mat-paginator [pageSizeOptions]="[5, 10, 20]" aria-label="Select page"></mat-paginator>
                     </div>
-                    <div class="col-sm-12 col-md-6">
-                        <div id="add-row_filter" class="dataTables_filter"><label>Search:<input type="search"
-                                    class="form-control form-control-sm" placeholder="" aria-controls="add-row"></label>
-                        </div>
+                    <div class="col-md-3 offset-md-4">
+                        <form [formGroup]="busquedaForm">
+                            <div class="input-group">
+                                <input type="text" class="form-control" placeholder="Buscar"
+                                    formControlName="search" required>
+                                <button class="btn btn-outline-secondary" type="button" (click)="buscar()">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
-                <table mat-table [dataSource]="listaPacientes" matSort
+                <table mat-table [dataSource]="dataSource" matSort
                     class="table table-light table-hover table-responsive" role="grid" aria-describedby="add-row_info">
                     <!-- Matricula Column -->
                     <ng-container matColumnDef="idPaciente">
@@ -258,7 +259,7 @@
 
                     <ng-container matColumnDef="fecha">
                         <th mat-header-cell *matHeaderCellDef mat-sort-header> Fecha </th>
-                        <td mat-cell *matCellDef="let element">{{element.FECHA | date:'yyyy-MM-dd'}}</td>
+                        <td mat-cell *matCellDef="let element">{{element.FECHA | date:'dd-MM-yyyy'}}</td>
                         <td mat-footer-cell *matFooterCellDef>Fecha</td>
                     </ng-container>
 

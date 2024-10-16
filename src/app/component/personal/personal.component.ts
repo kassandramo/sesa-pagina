@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { PersonalService } from '../../core/services/personal.service';
 import { validacionesCampos } from '../../shared/validacionesCampos';
 import { constantesGlobales } from '../../shared/global.constants';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 
 @Component({
   selector: 'app-personal',
@@ -17,6 +18,7 @@ import { constantesGlobales } from '../../shared/global.constants';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatTableModule,
+    MatPaginatorModule,
     MatInputModule,
     MatButtonModule,
     CommonModule,
@@ -27,6 +29,7 @@ import { constantesGlobales } from '../../shared/global.constants';
 })
 export class PersonalComponent implements OnInit {
   altaPersonalForm: FormGroup;
+  busquedaForm: FormGroup;
   hide = true;
   estadoShow = false;
   datosCargados: any;
@@ -35,11 +38,24 @@ export class PersonalComponent implements OnInit {
   mensajeExito: string = '';
   personalList: any[] = [];
   displayedColumns: string[] = ['matricula', 'nombre', 'rol', 'cveEstado', 'fecha', 'fechaexpira', 'acciones'];
+  dataSource = new MatTableDataSource<any>([]);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  userData: any;
 
   constructor(
     private personalService: PersonalService,
     private fb: FormBuilder,
   ) {
+    this.busquedaForm = this.fb.group({
+      search: ['']
+    });
+
+    this.busquedaForm.get('search')?.valueChanges.subscribe(value => {
+      if (value === null || value === undefined || value === '') {
+        this.buscar();
+      }
+    });
     this.altaPersonalForm = this.fb.group({
       matricula: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(8)]],
       nombre: ['', Validators.required],
@@ -57,7 +73,11 @@ export class PersonalComponent implements OnInit {
   ngOnInit(): void {
     console.log("entrando en el componente personal");
     this.cargaPersonal();
-
+    this.cargaFiltros();
+  }
+  
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
   }
 
   cargaPersonal() {
@@ -65,10 +85,34 @@ export class PersonalComponent implements OnInit {
       next: data => {
         console.log('Respuesta del API:', data);
         this.personalList = data;
+        this.dataSource.data = this.personalList;
         this.actualizarTabla();
       },
       error: error => console.error('Error al obtener personal:', error)
     });
+  }
+
+  cargaFiltros():void {
+    // Configura el filtro para que funcione en múltiples campos
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      const transformedFilter = filter.trim().toLowerCase();
+      console.log('dta',data);
+      // Busca en todos los campos relevantes
+      const matchId = data.ID_PERSONALMED.toString().includes(transformedFilter);
+      const matchNombre = data.NOMBRE.toLowerCase().includes(transformedFilter);
+      const matchApPat = data.APELLIDO_PATERNO.toLowerCase().includes(transformedFilter);
+      const matchAPMat= data.APELLIDO_MATERNO.toLowerCase().includes(transformedFilter);
+      const matchMatricula = data.MATRICULA.toString().includes(transformedFilter);
+
+      // Retorna true si el filtro coincide con alguno de los campos
+      return matchId || matchNombre || matchMatricula || matchApPat || matchAPMat;
+    };
+  }
+
+  // Función para aplicar el filtro
+  buscar() {
+    const criterio = this.busquedaForm.get('search')?.value || ''; // Asegúrate de que no sea null
+    this.dataSource.filter = criterio.trim().toLowerCase(); // Aplica el filtro en minúsculas
   }
 
   alta_Personal(): void {
@@ -267,7 +311,7 @@ export class PersonalComponent implements OnInit {
 
   actualizarTabla(): void {
     // Filtrar los horarios que estén activos
-    this.personalList = this.personalList
+    this.dataSource.data
       .sort((a, b) => {
         // Ordenar por FECHA_REGISTRO en orden descendente (los más nuevos primero)
         return new Date(b.FECHA_ULTACTUALIZACION).getTime() - new Date(a.FECHA_ULTACTUALIZACION).getTime();

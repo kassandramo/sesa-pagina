@@ -1,11 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
-import { MatTableModule } from '@angular/material/table';
+import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { CitasService } from '../../core/services/citas.service';
 import { UserDataService } from '../../core/services/user.service';
 import { validacionesCampos } from '../../shared/validacionesCampos';
@@ -13,6 +13,7 @@ import { PacientesService } from '../../core/services/pacientes.service';
 import { PersonalService } from '../../core/services/personal.service';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { constantesGlobales } from '../../shared/global.constants';
+import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 
 
 @Component({
@@ -22,6 +23,7 @@ import { constantesGlobales } from '../../shared/global.constants';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatTableModule,
+    MatPaginatorModule,
     NgSelectModule,
     MatInputModule,
     MatButtonModule,
@@ -34,15 +36,23 @@ import { constantesGlobales } from '../../shared/global.constants';
 })
 export class CitasComponent implements OnInit {
   altaCitaForm: FormGroup;
+  busquedaForm: FormGroup;
   estadoShow = false;
   datosCargados: any;
   idelement: number = 0;
+  rol: string = '';
+  matricula: number = 0;
   listacita: any[] = [];
   listaPersonal: any[] = [];
   listaPaciente: any[] = [];
   mensajeError: string = '';
   mensajeExito: string = '';
   columnas: string[] = ['idCita', 'paciente', 'fecha', 'hora', 'tipocita', 'estado', 'atiende', 'acciones'];
+
+  dataSource = new MatTableDataSource<any>([]);
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  userData: any;
 
   constructor(
     private userDataService: UserDataService,
@@ -51,6 +61,11 @@ export class CitasComponent implements OnInit {
     private personalService: PersonalService,
     private fb: FormBuilder,
   ) {
+
+    this.busquedaForm = this.fb.group({
+      search: ['']
+    });
+
     this.altaCitaForm = this.fb.group({
       fecha_cita: ['', Validators.required],
       hora_cita: ['', Validators.required],
@@ -59,21 +74,41 @@ export class CitasComponent implements OnInit {
       tipo: ['0'],
       estado: ['0'],
     });
+
+    this.busquedaForm.get('search')?.valueChanges.subscribe(value => {
+      if (value === null || value === undefined || value === '') {
+        this.buscar();
+      }
+
+    });
   }
 
   ngOnInit(): void {
+    this.userData = this.userDataService.getUserData();
     console.log("entrando en el componente pacientes");
     this.cargaCitas();
     this.cargaListaPersonal();
     this.cargaListaPacientes();
+    this.cargaFiltros();
+
+    // Si el usuario tiene los roles 1 o 3, establece el filtro inicial
+    if (this.userData && (this.userData.ID_ROL === 1 || this.userData.ID_ROL === 3)) {
+      this.dataSource.filter = this.userData.MATRICULA.toString();
+    }
   }
+
+
+  ngAfterViewInit() {
+    this.dataSource.paginator = this.paginator;
+  }
+
 
   cargaCitas(): void {
     this.citasService.obtenerCitas().subscribe({
       next: data => {
         console.log('Respuesta del API:', data);
         this.listacita = data;
-        this.actualizarTabla();
+        this.dataSource.data = this.listacita;
       },
       error: error => console.error('Error al obtener la lista de citas:', error)
     });
@@ -94,6 +129,38 @@ export class CitasComponent implements OnInit {
     });
   }
 
+  cargaFiltros(): void {
+    // Configura el filtro para que funcione en múltiples campos
+    this.dataSource.filterPredicate = (data: any, filter: string) => {
+      const transformedFilter = filter.trim().toLowerCase();
+
+      // Busca en todos los campos relevantes
+      const matchId = data.ID_CITA.toString().includes(transformedFilter);
+      const matchNombreP = data.paciente.NOMBRE.toLowerCase().includes(transformedFilter);
+      const matchNombre = data.personal.NOMBRE.toLowerCase().includes(transformedFilter);
+      const matchMatricula = data.MATRICULAMED.toString().includes(transformedFilter);
+
+      // Retorna true si el filtro coincide con alguno de los campos
+      return matchId || matchNombre || matchNombreP || matchMatricula;
+    };
+  }
+
+  // Función para aplicar el filtro
+  buscar() {
+    const criterio = this.busquedaForm.get('search')?.value || ''; // Asegúrate de que no sea null
+    this.dataSource.filter = criterio.trim().toLowerCase(); // Aplica el primer filtro en minúsculas
+
+    // Aplicar el segundo filtro basado en la matrícula si el usuario tiene roles 1 o 3
+    if (this.userData && (this.userData.ID_ROL === 1 || this.userData.ID_ROL === 3)) {
+      const filtradoPorMatricula = this.dataSource.data.filter(
+        cita => cita.MATRICULAMED === this.userData.MATRICULA
+      );
+      this.dataSource.data = filtradoPorMatricula; // Actualizar los datos con el resultado filtrado
+    }
+
+    // Ver el resultado final después de ambos filtros
+    console.log('Resultado de la búsqueda:', this.dataSource.data);
+  }
 
   cargaListaPacientes(): void {
     this.pacientesService.obtenerPacientes().subscribe({
@@ -123,11 +190,11 @@ export class CitasComponent implements OnInit {
 
       // Preparar el JSON con los datos del formulario
       const dataPersonal = {
-        FECHA_CITA: this.altaCitaForm.value.fecha_cita,
-        HORA_CITA: this.altaCitaForm.value.hora_cita,
-        CVE_TIPO_CITA: this.altaCitaForm.value.tipo,
-        ID_PACIENTE: this.altaCitaForm.value.paciente,
-        MATRICULAMED: this.altaCitaForm.value.personal,
+        FECHA_CITA: this.altaCitaForm.get('fecha_cita')?.value,
+        HORA_CITA: this.altaCitaForm.get('hora_cita')?.value,
+        CVE_TIPO_CITA: this.altaCitaForm.get('tipo')?.value,
+        ID_PACIENTE: this.altaCitaForm.get('paciente')?.value,
+        MATRICULAMED: this.altaCitaForm.get('personal')?.value,
         CVE_ESTADO: 1,
         ACTIVO: true,
       };
@@ -155,10 +222,6 @@ export class CitasComponent implements OnInit {
     } else {
       this.validarFormulario();
     }
-  }
-
-  editar(element: any): void {
-    console.log('Actualizar estado de:', element);
   }
 
   eliminar(element: any): void {
@@ -209,12 +272,12 @@ export class CitasComponent implements OnInit {
 
         // Preparar el JSON con los datos del formulario
         const dataPersonal = {
-          FECHA_CITA: this.altaCitaForm.value.fecha_cita,
-          HORA_CITA: this.altaCitaForm.value.hora_cita,
-          CVE_TIPO_CITA: this.altaCitaForm.value.tipo,
-          ID_PACIENTE: this.altaCitaForm.value.paciente,
-          MATRICULAMED: this.altaCitaForm.value.personal,
-          CVE_ESTADO: this.altaCitaForm.value.estado,
+          FECHA_CITA: this.altaCitaForm.get('fecha_cita')?.value,
+          HORA_CITA: this.altaCitaForm.get('hora_cita')?.value,
+          CVE_TIPO_CITA: this.altaCitaForm.get('tipo')?.value,
+          ID_PACIENTE: this.altaCitaForm.get('paciente')?.value,
+          MATRICULAMED: this.altaCitaForm.get('personal')?.value,
+          CVE_ESTADO: this.altaCitaForm.get('estado')?.value,
           ACTIVO: true,
         };
         console.log('Formulario enviado con éxito:', dataPersonal);
@@ -255,11 +318,26 @@ export class CitasComponent implements OnInit {
 
   limpiarFormulario(): void {
     this.altaCitaForm.reset();
-    this.altaCitaForm.patchValue({
-      personal: 0,
-      paciente: 0,
-      tipo: 0
-    });
+    if (this.userData) {
+      if (this.userData.ID_ROL === 1 || this.userData.ID_ROL === 3) {
+        // Establecer el valor por defecto
+        this.dataSource.filter = this.userData.MATRICULA.toString();
+        this.altaCitaForm.patchValue({
+          personal: this.userData.MATRICULA,
+          paciente: 0,
+          tipo: 0
+        });
+
+        // Deshabilitar el campo
+        this.altaCitaForm.get('personal')?.disable();
+      } else {
+        this.altaCitaForm.patchValue({
+          personal: 0,
+          paciente: 0,
+          tipo: 0
+        });
+      }
+    }
   }
 
   actualizarTabla(): void {
